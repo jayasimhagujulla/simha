@@ -1,0 +1,258 @@
+#atmoperations.py-------for operations
+from userexceptions import DepositError,BalenqError,WithdrawError,InsuffundError,resetpinError,FundTransferError
+import cx_Oracle,sys
+con=cx_Oracle.connect("system/root@127.0.0.1/xe")
+cur=con.cursor()
+#cur.execute("select * from bank")
+#bal=cur.fetchall()
+#print(bal)
+bal=500
+try:
+	def deposit():                               #for Deposit
+		global con,cur,bal
+		userreg=input("Are You a Existing Customer:(YES/NO):")
+		if(userreg=="YES")or(userreg=="yes")or(userreg=="Yes"):
+			ch=int(input("Please Enter Your PIN:"))  #2680
+			pg="select cname from bank where cpin=%d"  #bank name retreive
+			cur.execute(pg %(ch))   ##2680
+			con.commit()
+			record=cur.fetchone()
+			if(cur.rowcount>0):
+				for val in record:
+					print("-"*50)
+					print("\tHello {} Welcome to banking Services:".format(val))			
+				else:
+					print("-"*50)
+				ch1=input("\nDo U Want to continue:(YES/NO):")
+				print("-"*50)
+				if(ch1=="YES")or(ch1=="yes")or(ch1=="Yes"):
+					damt=float(input("Enter The Amount U Want To Deposit:")) #500
+					if(damt<=0):  ###500
+						raise DepositError              #deposit error  zero and -ve number's can;t deposit
+					else:
+						print("-"*50)
+						if(damt%100==0):    #500%100=0    
+							bal=bal+damt
+							print(f"\nUr Account xxxx5236 is Credited With {damt}")
+							print(f"Now UR Current Account Balance is:{bal}")
+						else:
+							print("\n U Can Only Deposit Multiples of Hunderds:---Plz Try With 100's Mutltiples")
+				else:
+					print("-"*50)
+					print("\tThanks for Using The Application!!!")
+					print("-"*50)
+					sys.exit()
+			else:
+				print("-"*50)
+				print("\nInvalid PIN---Plz Try Again")
+		else:
+			if(userreg=="NO")or(userreg=="no")or(userreg=="No"):
+				print("-"*50)
+				newreg=input("Do Want to Register For New Account:(YES/NO):")
+				if(newreg=="YES")or(newreg=="yes")or(newreg=="Yes"):
+					print("-"*50)
+					usrno=int(input("Enter Your Account Number:"))#if account number already exists
+					cur.execute("select cno from bank where cno=%d" %usrno)
+					record=cur.fetchone()
+					if(cur.rowcount>0):
+						print("-"*50)
+						print("\nAccount Number Already Exists:")
+					else:
+						usrname=input("Enter Your Name:")
+						upin=int(input("Set UR PIN:"))
+						ubal=float(input("Deposit Minimum Amount to Open Account:"))
+						bname=input("Enter UR Bank Name:")
+						nq="insert into bank values (%d,'%s',%d,%f,'%s')"
+						cur.execute(nq %(usrno,usrname,upin,ubal,bname))
+						con.commit()
+						print("-"*50)
+						print("\nYour Account Opened Successfully:")
+				else:
+					print("-"*50)
+					print("\tThanks For Using The Application!!")
+					print("-"*50)
+					sys.exit()
+			
+
+			else:
+				print("-"*50)
+				print("\tThanks For Using The Application!!!")
+				print("-"*50)
+				sys.exit()
+		
+
+#for withdraw		
+	def withdraw():
+		global con,cur,bal
+		wno=int(input("Enter Your PIN:"))
+		wq="select cname from bank where cpin=%d"
+		cur.execute(wq %(wno))
+		con.commit()
+		record=cur.fetchone()
+		if(cur.rowcount>0):
+			for records in record:
+				print("-"*50)
+				print("\t Hello {} Welcome To Banking Services".format(records))				
+			else:
+				print("-"*50)
+				ch3=input("Do You Want to Continue:(YES/NO):")
+				if(ch3=="YES")or(ch3=="yes")or(ch3=="Yes"):
+					print("-"*50)
+					wamt=float(input("Enter The Amount U Want to Withdraw:"))	#500	#ValueError
+					if(wamt<=0):
+						raise WithdrawError             #Balance Withdraw Error
+					else:
+						print("-"*50)
+						if(wamt%100==0):   #500%100==0
+							if(wamt+500>bal):  #1500   500
+								raise InsuffundError      #Balance Insufficient error
+							else:
+								bal=bal-wamt  #1500-500
+								print(f"\nUr Account xxxx5236 is Debited With {wamt}")
+								print(f"Now UR Current Account Balance is:{bal}")			
+						else:
+							print("\n U Can Only Withdraw Multiples of Hunderds:---Plz Try With 100's Mutltiples")
+				else:
+					print("-"*50)
+					print("\tThanks For Using The Application!!!")
+					print("-"*50)
+					sys.exit()
+		else:
+			print("-"*50)
+			print("\nInvalid PIN---Plz Try Again")
+	
+#for balenquiry 
+	def balenq():
+		global cur,con
+		global bal
+		sno=int(input("Enter Your PIN:"))
+		be="select cname from bank where cpin=%d"
+		cur.execute(be %(sno))
+		con.commit()
+		records=cur.fetchone()
+		if(cur.rowcount>0):
+			for val in records:
+				print("-"*50)
+				print(f"\t\tHello {val}")
+				be="select cbal from bank where cpin=%d"
+				cur.execute(be %(sno))
+				record=cur.fetchone()
+				for pinvalue in record:
+					print(f"Now Ur Current Account xxxx5236 Balance is:{pinvalue}")
+					print("-"*50)
+					ch2=input("Do U Want to Continue:(yes/no):")		
+					if(ch2=="YES")or(ch2=="yes")or(ch2=="Yes"):
+						continue
+					else:
+						print("-"*50)
+						print("\tThanks For Using this Application!!!")
+						print("-"*50)
+						sys.exit()
+		else:
+			raise BalenqError
+
+#Resetting the PIN
+	def resetpin():
+		global cur,con
+		rcp=input("Do You Want to Reset Your PIN:(YES/NO):")
+		if(rcp=="YES")or(rcp=="yes")or(rcp=="Yes"):
+			ac=int(input("Please Enter Your Accout Number:"))
+			rp="select  cname from bank where cno=%d"
+			cur.execute(rp %(ac))
+			con.commit()
+			record=cur.fetchone()
+			if(cur.rowcount>0):
+				for val in record:
+					print("-"*50)
+					print(f"\t\tHello {val}")
+					print("-"*50)
+					npin=int(input("Enter Ur New PIN:"))
+					rpin=int(input("Re-Enter Ur PIN:"))
+					spin=str(npin)
+					mpin=str(rpin)
+					if(len(spin)==4) and(len(mpin)==4):
+						if(npin==rpin):
+							upin="update bank set cpin='%d' where cno='%d'"
+							cur.execute(upin %(npin,ac))
+							con.commit()		
+							print("-"*50)
+							print("\nYour PIN Changed Successfully:")
+							print("-"*50)
+						else:
+							raise resetpinError
+					else:
+						print("-"*50)
+						print("\nPIN Contains 4 Digits:")
+			else:
+				print("-"*50)
+				print("\nAcoount Number Doesn't Match--Plz Try Again")
+				print("-"*50)
+
+		else:
+			print("-"*50)
+			sys.exit()
+
+
+#fund transfer
+	def fundtransfer():
+		global cur,con
+		ft=int(input("Enter UR PIN:"))
+		tf=str(ft)
+		if(len(tf)==4):
+			ftq="select cname from bank where cpin=%d"
+			cur.execute(ftq %ft)
+			record=cur.fetchone()
+			if(cur.rowcount>0):
+				for val in record:
+					print("-"*50)
+					print("\tHello {}:".format(val))
+					print("-"*50)
+					ft1=input("Do You Want to Transfer Money:(YES/NO):")
+					if(ft1=="YES")or(ft1=="yes")or(ft1=="Yes"):
+						print("-"*50)
+						ft2=int(input("\nEnter Beneficiary Account Number:"))
+						ft3=int(input("\nRe-Enter Beneficiary Account Number:"))
+						if(ft2==ft3):
+							print("-"*50)
+							tamt=float(input("Enter The Amount:"))
+							if(tamt<=0):
+								raise FundTransferError
+							else:
+								ftq1="select cbal from bank where cpin=%d"
+								cur.execute(ftq1 %ft)
+								record=cur.fetchone()
+								for fv in record:
+									fv=fv-tamt
+									ftamt="update bank set cbal=cbal-%d where cpin=%d"  #for updating the value after transaction
+									cur.execute(ftamt %(tamt,ft))
+									con.commit()
+									print("-"*50)
+									print(f"\nYour Transaction is Suucessfull:")
+									print(f"\nUR Account xxxx5236 is debited with:{tamt}")
+								else:
+									print("-"*50)																											
+
+						else:
+							print("-"*50)
+							print("\nAcoount Number Doesn't Match--Plz Try Again")
+							print("-"*50)
+							sys.exit()
+					else:
+						print("-"*50)
+						print("\nThanks for Using this Application!!")
+						print("-"*50)
+						sys.exit()
+			else:
+				print("-"*50)
+				print("Invalid PIN ---Plz Try Again:")
+				print("-"*50)
+				sys.exit()
+
+		else:
+			print("PIN Contain 4 Digits:")
+
+		
+except cx_Oracle.DatabaseError as db:
+	print("Connection Problem---Plz Verify",db)
+except ValueError:
+	print("\nDon't Enter Str's,Special Symbols and AlphaNumerics:")
